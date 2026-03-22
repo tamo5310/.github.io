@@ -1,73 +1,247 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>配分計算ツール</title>
-<style>
-body {
-  font-family: sans-serif;
-  background: #f7f7f7;
-  padding: 20px;
-}
-.box {
-  max-width: 500px;
-  margin: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-}
-input, button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  font-size: 16px;
-}
-button {
-  background: black;
-  color: white;
-  border: none;
-  border-radius: 8px;
-}
-.result {
-  margin-top: 15px;
-  background: #eee;
-  padding: 10px;
-  border-radius: 8px;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>配分計算ツール</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      margin-top: 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+      text-align: center;
+    }
+
+    .sub {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      border: 1px solid #d8deea;
+      border-radius: 12px;
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: #7b8cff;
+      box-shadow: 0 0 0 3px rgba(123, 140, 255, 0.15);
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .primary {
+      background: #222;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #eef2ff;
+      color: #334;
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #edf0f5;
+      gap: 12px;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .name {
+      font-size: 15px;
+      color: #444;
+    }
+
+    .value {
+      font-size: 17px;
+      font-weight: 700;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #777;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .message {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #2d5a27;
+      line-height: 1.5;
+    }
+
+    .error {
+      color: #b00020;
+    }
+  </style>
 </head>
-
 <body>
-<div class="box">
-<h2>配分計算ツール</h2>
+  <div class="wrap">
+    <div class="card">
+      <h1>配分計算ツール</h1>
+      <div class="sub">
+        1位のポイントを入力すると、条件に合わせて自動計算します
+      </div>
 
-<input type="number" id="first" value="10000">
-<button onclick="calc()">計算</button>
+      <label for="first">1位のポイント</label>
+      <input type="number" id="first" inputmode="numeric" value="10000" />
 
-<div class="result" id="result"></div>
-</div>
+      <button class="primary" onclick="calc()">計算する</button>
+      <button class="secondary" onclick="copyResult()">結果をコピー</button>
 
-<script>
-function calc(){
-  let first = Number(document.getElementById("first").value);
+      <div class="note">
+        条件：1位=29%、1位+2位=44%、1位〜5位=59%<br>
+        3位〜5位は均等、6位〜30位は合計表示です。
+      </div>
 
-  let total = first / 0.29;
-  let second = total * 0.44 - first;
-  let total5 = total * 0.59;
-  let third = (total5 - (first + second)) / 3;
-  let lower = total - total5;
+      <div id="copyMessage" class="message"></div>
+    </div>
 
-  document.getElementById("result").innerHTML =
-  "全体: " + Math.round(total) + "円<br>" +
-  "1位: " + Math.round(first) + "円<br>" +
-  "2位: " + Math.round(second) + "円<br>" +
-  "3位: " + Math.round(third) + "円<br>" +
-  "4位: " + Math.round(third) + "円<br>" +
-  "5位: " + Math.round(third) + "円<br>" +
-  "6位〜30位合計: " + Math.round(lower) + "円";
-}
-</script>
+    <div class="card">
+      <div class="result-title">計算結果</div>
+      <div id="resultArea"></div>
+    </div>
+  </div>
 
+  <script>
+    function formatPoint(value) {
+      return Math.round(value).toLocaleString("ja-JP") + "pt";
+    }
+
+    function buildResultText(first, total, second, third, lowerTotal) {
+      return [
+        "全体: " + formatPoint(total),
+        "1位: " + formatPoint(first),
+        "2位: " + formatPoint(second),
+        "3位: " + formatPoint(third),
+        "4位: " + formatPoint(third),
+        "5位: " + formatPoint(third),
+        "6位〜30位合計: " + formatPoint(lowerTotal)
+      ].join("\n");
+    }
+
+    function calc() {
+      const first = Number(document.getElementById("first").value);
+      const resultArea = document.getElementById("resultArea");
+      const copyMessage = document.getElementById("copyMessage");
+
+      copyMessage.textContent = "";
+
+      if (!first || first <= 0) {
+        resultArea.innerHTML = `
+          <div class="row">
+            <div class="name error">エラー</div>
+            <div class="value error">1位のポイントを入力してください</div>
+          </div>
+        `;
+        return;
+      }
+
+      const total = first / 0.29;
+      const second = (total * 0.44) - first;
+      const total5 = total * 0.59;
+      const third = (total5 - (first + second)) / 3;
+      const lowerTotal = total - total5;
+
+      resultArea.innerHTML = `
+        <div class="row"><div class="name">全体</div><div class="value">${formatPoint(total)}</div></div>
+        <div class="row"><div class="name">1位</div><div class="value">${formatPoint(first)}</div></div>
+        <div class="row"><div class="name">2位</div><div class="value">${formatPoint(second)}</div></div>
+        <div class="row"><div class="name">3位</div><div class="value">${formatPoint(third)}</div></div>
+        <div class="row"><div class="name">4位</div><div class="value">${formatPoint(third)}</div></div>
+        <div class="row"><div class="name">5位</div><div class="value">${formatPoint(third)}</div></div>
+        <div class="row"><div class="name">6位〜30位合計</div><div class="value">${formatPoint(lowerTotal)}</div></div>
+      `;
+    }
+
+    async function copyResult() {
+      const first = Number(document.getElementById("first").value);
+      const copyMessage = document.getElementById("copyMessage");
+
+      if (!first || first <= 0) {
+        copyMessage.textContent = "1位のポイントを入力してからコピーしてください。";
+        return;
+      }
+
+      const total = first / 0.29;
+      const second = (total * 0.44) - first;
+      const total5 = total * 0.59;
+      const third = (total5 - (first + second)) / 3;
+      const lowerTotal = total - total5;
+
+      const text = buildResultText(first, total, second, third, lowerTotal);
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copyMessage.textContent = "結果をコピーしました。";
+      } catch (e) {
+        copyMessage.textContent = "コピーできませんでした。";
+      }
+    }
+
+    calc();
+  </script>
 </body>
 </html>
