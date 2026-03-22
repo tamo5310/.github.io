@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配分計算ツール</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #f7f7f7;
+  padding: 20px;
+}
+.box {
+  max-width: 500px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+button {
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+.result {
+  margin-top: 15px;
+  background: #eee;
+  padding: 10px;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+<div class="box">
+<h2>配分計算ツール</h2>
+
+<input type="number" id="first" value="10000">
+<button onclick="calc()">計算</button>
+
+<div class="result" id="result"></div>
+</div>
+
+<script>
+function calc(){
+  let first = Number(document.getElementById("first").value);
+
+  let total = first / 0.29;
+  let second = total * 0.44 - first;
+  let total5 = total * 0.59;
+  let third = (total5 - (first + second)) / 3;
+  let lower = total - total5;
+
+  document.getElementById("result").innerHTML =
+  "全体: " + Math.round(total) + "円<br>" +
+  "1位: " + Math.round(first) + "円<br>" +
+  "2位: " + Math.round(second) + "円<br>" +
+  "3位: " + Math.round(third) + "円<br>" +
+  "4位: " + Math.round(third) + "円<br>" +
+  "5位: " + Math.round(third) + "円<br>" +
+  "6位〜30位合計: " + Math.round(lower) + "円";
+}
+</script>
+
+</body>
+</html>
