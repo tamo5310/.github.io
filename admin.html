@@ -5,21 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>メセカ管理画面</title>
   <style>
-    :root{--pink:#f7a7cd;--deep:#e46aa5;--ink:#555;--bg:#fff5fb;--line:#ffd1e8}
+    :root{--pink:#f7a7cd;--deep:#e46aa5;--ink:#555;--bg:#fff5fb;--line:#ffd1e8;--danger:#f08a8a}
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
     header{padding:18px 14px;text-align:center;background:#ffe2f1;border-bottom:3px solid var(--line)}
     h1{font-size:22px;margin:0;color:var(--deep)}
     main{max-width:1120px;margin:auto;padding:16px}
     .panel{background:white;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}
-    input,button{font:inherit}input{box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+    input,button,select{font:inherit}input,select{box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}
     button{border:0;border-radius:999px;padding:10px 14px;background:var(--pink);color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}
     button.secondary{background:#aaa;box-shadow:0 3px 0 #888}
+    button.danger{background:var(--danger);box-shadow:0 3px 0 #cf6666}
+    button:disabled{opacity:.55;cursor:not-allowed}
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
     .card{background:white;border:1px solid var(--line);border-radius:16px;padding:10px}
     canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 8px #0001}
-    .meta{font-size:13px;margin:8px 0;color:#666}.hidden{display:none!important}
+    .meta{font-size:13px;margin:8px 0;color:#666;line-height:1.7}.hidden{display:none!important}
     .small{font-size:12px;color:#777}.status{font-weight:700;color:var(--deep)}
+    .cardButtons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    @media print{header,.panel:first-child,.cardButtons,.meta{display:none!important}main{max-width:none;padding:0}.grid{display:block}.card{page-break-inside:avoid;border:0;margin:0 0 10px;padding:0}canvas{box-shadow:none;border-radius:0;width:100%}}
   </style>
 </head>
 <body>
@@ -37,6 +41,12 @@
       <div class="toolbar">
         <button id="loadBtn">一覧を更新</button>
         <button id="printBtn" class="secondary">印刷する</button>
+        <label class="small">並び順
+          <select id="sortOrder">
+            <option value="desc">新しい順</option>
+            <option value="asc">古い順</option>
+          </select>
+        </label>
         <span id="status" class="status"></span>
       </div>
       <p class="small">画像はStorageではなく、Firestoreに保存された内容からこの管理画面で再生成します。</p>
@@ -48,7 +58,7 @@
 <script src="firebase-config.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, orderBy, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 const CONFIG=window.MESECA_FIREBASE_CONFIG||{};
 const PASSWORD=window.MESECA_ADMIN_PASSWORD||'';
@@ -58,6 +68,13 @@ baseImg.src='assets/meseca-template.jpeg';
 
 function isFirebaseReady(){return !!(CONFIG.apiKey&&CONFIG.projectId);}
 function initFirebase(){ if(!isFirebaseReady()) throw new Error('Firebase設定がありません'); app=initializeApp(CONFIG); db=getFirestore(app); }
+
+function formatDate(value){
+  if(!value) return '日時なし';
+  const d = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+  if(Number.isNaN(d.getTime())) return '日時なし';
+  return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
 
 function drawCard(canvas, data){
   const ctx=canvas.getContext('2d');
@@ -113,42 +130,23 @@ function downloadCanvas(canvas, name){
   a.click();
 }
 
+async function deleteCard(id, from){
+  if(!confirm(`「${from||id}」の投稿を削除しますか？\nこの操作は元に戻せません。`)) return;
+  try{
+    await deleteDoc(doc(db,'meseca_cards',id));
+    await loadCards();
+  }catch(err){
+    console.error(err);
+    alert('削除に失敗しました。Firestoreルールを確認してください。');
+  }
+}
+
 async function loadCards(){
   const status=document.getElementById('status');
   const list=document.getElementById('list');
+  const order=document.getElementById('sortOrder').value;
   status.textContent='読み込み中…';
   list.innerHTML='';
   try{
-    const snap=await getDocs(query(collection(db,'meseca_cards'), orderBy('createdAt','desc')));
-    status.textContent=`${snap.size}件`;
-    snap.forEach(doc=>{
-      const data=doc.data();
-      const wrap=document.createElement('div');
-      wrap.className='card';
-      const canvas=document.createElement('canvas');
-      canvas.width=986; canvas.height=576;
-      const meta=document.createElement('div');
-      meta.className='meta';
-      meta.textContent=`From：${data.from||''}`;
-      const btn=document.createElement('button');
-      btn.textContent='PNGダウンロード';
-      btn.onclick=()=>downloadCanvas(canvas,data.from||doc.id);
-      wrap.appendChild(canvas); wrap.appendChild(meta); wrap.appendChild(btn);
-      list.appendChild(wrap);
-      if(baseImg.complete) drawCard(canvas,data);
-      else baseImg.onload=()=>drawCard(canvas,data);
-    });
-  }catch(err){console.error(err); status.textContent='読み込み失敗'; alert('管理画面の読み込みに失敗しました。Firestoreルールや設定を確認してください。');}
-}
-
-document.getElementById('loginBtn').onclick=()=>{
-  if(document.getElementById('pass').value!==PASSWORD){alert('パスワードが違います。');return;}
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('adminArea').classList.remove('hidden');
-  try{initFirebase();loadCards();}catch(e){alert(e.message);}
-};
-document.getElementById('loadBtn').onclick=loadCards;
-document.getElementById('printBtn').onclick=()=>window.print();
-</script>
-</body>
-</html>
+    const snap=await getDocs(query(collection(db,'meseca_cards'), orderBy('createdAt',order)));
+    status.te
