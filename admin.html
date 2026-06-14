@@ -149,4 +149,53 @@ async function loadCards(){
   list.innerHTML='';
   try{
     const snap=await getDocs(query(collection(db,'meseca_cards'), orderBy('createdAt',order)));
-    status.te
+    status.textContent=`${snap.size}件`;
+    snap.forEach(docSnap=>{
+      const data=docSnap.data();
+      const wrap=document.createElement('div');
+      wrap.className='card';
+      const canvas=document.createElement('canvas');
+      canvas.width=986; canvas.height=576;
+      const meta=document.createElement('div');
+      meta.className='meta';
+      meta.innerHTML=`From：${escapeHtml(data.from||'')}<br>投稿日時：${formatDate(data.createdAt)}`;
+      const buttons=document.createElement('div');
+      buttons.className='cardButtons';
+      const dlBtn=document.createElement('button');
+      dlBtn.textContent='PNGダウンロード';
+      dlBtn.onclick=()=>downloadCanvas(canvas,data.from||docSnap.id);
+      const delBtn=document.createElement('button');
+      delBtn.textContent='削除';
+      delBtn.className='danger';
+      delBtn.onclick=()=>deleteCard(docSnap.id,data.from||'');
+      buttons.appendChild(dlBtn); buttons.appendChild(delBtn);
+      wrap.appendChild(canvas); wrap.appendChild(meta); wrap.appendChild(buttons);
+      list.appendChild(wrap);
+      if(baseImg.complete) drawCard(canvas,data);
+      else baseImg.onload=()=>drawCard(canvas,data);
+    });
+  }catch(err){console.error(err); status.textContent='読み込み失敗'; alert('管理画面の読み込みに失敗しました。Firestoreルールや設定を確認してください。');}
+}
+
+function escapeHtml(str){return String(str).replace(/[&<>'"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s]));}
+
+document.getElementById('loginBtn').onclick=()=>{
+  if(document.getElementById('pass').value!==PASSWORD){alert('パスワードが違います。');return;}
+  sessionStorage.setItem('meseca_admin_ok','1');
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('adminArea').classList.remove('hidden');
+  try{initFirebase();loadCards();}catch(e){alert(e.message);}
+};
+document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginBtn').click();});
+document.getElementById('loadBtn').onclick=loadCards;
+document.getElementById('sortOrder').onchange=loadCards;
+document.getElementById('printBtn').onclick=()=>window.print();
+
+if(sessionStorage.getItem('meseca_admin_ok')==='1'){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('adminArea').classList.remove('hidden');
+  try{initFirebase();loadCards();}catch(e){alert(e.message);}
+}
+</script>
+</body>
+</html>
