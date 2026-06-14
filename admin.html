@@ -1,15 +1,154 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>メセカ管理画面</title>
-<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff5fb;color:#555}header{text-align:center;background:#ffe2f1;padding:18px;border-bottom:3px solid #ffd1e8}h1{font-size:22px;color:#e46aa5}main{max-width:1100px;margin:auto;padding:16px}.panel{background:#fff;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}input,button{font:inherit;border-radius:12px;padding:10px}input{border:2px solid #ffd1e8}button{border:0;background:#f7a7cd;color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.card{border:1px solid #ffd1e8;border-radius:14px;padding:10px;background:#fff}.card img{width:100%;border-radius:10px}.meta{font-size:13px}.hidden{display:none!important}.small{font-size:12px;color:#777}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}@media print{header,.noPrint{display:none}.grid{display:block}.card{break-inside:avoid;margin:0 0 10px;border:0}.meta,.buttons{display:none}.card img{width:100%}}</style>
-</head><body><header><h1>メセカ管理画面</h1></header><main>
-<section id="login" class="panel noPrint"><p>管理パスワードを入力してください。</p><input id="pw" type="password" placeholder="管理パスワード"><button id="loginBtn">開く</button><p class="small">firebase-config.js の MESECA_ADMIN_PASSWORD を使います。</p></section>
-<section id="admin" class="panel hidden"><div class="noPrint"><button id="reloadBtn">再読み込み</button> <button id="printBtn">印刷</button><p id="count"></p></div><div id="list" class="grid"></div></section>
-</main><script src="firebase-config.js"></script><script type="module">
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>メセカ管理画面</title>
+  <style>
+    :root{--pink:#f7a7cd;--deep:#e46aa5;--ink:#555;--bg:#fff5fb;--line:#ffd1e8}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    header{padding:18px 14px;text-align:center;background:#ffe2f1;border-bottom:3px solid var(--line)}
+    h1{font-size:22px;margin:0;color:var(--deep)}
+    main{max-width:1120px;margin:auto;padding:16px}
+    .panel{background:white;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}
+    input,button{font:inherit}input{box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+    button{border:0;border-radius:999px;padding:10px 14px;background:var(--pink);color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}
+    button.secondary{background:#aaa;box-shadow:0 3px 0 #888}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .card{background:white;border:1px solid var(--line);border-radius:16px;padding:10px}
+    canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 8px #0001}
+    .meta{font-size:13px;margin:8px 0;color:#666}.hidden{display:none!important}
+    .small{font-size:12px;color:#777}.status{font-weight:700;color:var(--deep)}
+  </style>
+</head>
+<body>
+<header><h1>メセカ管理画面</h1></header>
+<main>
+  <section id="login" class="panel">
+    <p>管理パスワードを入力してください。</p>
+    <input id="pass" type="password" placeholder="管理パスワード">
+    <button id="loginBtn">開く</button>
+    <p class="small">パスワードは firebase-config.js の MESECA_ADMIN_PASSWORD で設定します。</p>
+  </section>
+
+  <section id="adminArea" class="hidden">
+    <section class="panel">
+      <div class="toolbar">
+        <button id="loadBtn">一覧を更新</button>
+        <button id="printBtn" class="secondary">印刷する</button>
+        <span id="status" class="status"></span>
+      </div>
+      <p class="small">画像はStorageではなく、Firestoreに保存された内容からこの管理画面で再生成します。</p>
+    </section>
+    <section id="list" class="grid"></section>
+  </section>
+</main>
+
+<script src="firebase-config.js"></script>
+<script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-function isFirebaseReady(){const c=window.MESECA_FIREBASE_CONFIG||{};return !!(c.apiKey&&c.projectId&&c.storageBucket);}let db;
-function setup(){if(!isFirebaseReady()){alert('Firebase設定がまだ入っていません。');return false;}const app=initializeApp(window.MESECA_FIREBASE_CONFIG);db=getFirestore(app);return true;}
-async function load(){const list=document.getElementById('list');list.innerHTML='読み込み中…';const snap=await getDocs(query(collection(db,'meseca_cards'),orderBy('createdAt','desc')));const items=[];snap.forEach(d=>items.push({id:d.id,...d.data()}));document.getElementById('count').textContent=`${items.length}件`;list.innerHTML=items.map((x,i)=>`<div class="card"><img src="${x.imageUrl}" alt="${x.from||''}"><div class="meta"><b>${x.from||'(名前なし)'}</b><br>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString('ja-JP'):''}</div><div class="buttons noPrint"><a href="${x.imageUrl}" download="meseca_${i+1}_${(x.from||'noname').replace(/[\\/:*?&quot;<>|]/g,'_')}.png"><button>ダウンロード</button></a></div></div>`).join('')||'まだ投稿はありません。';}
-document.getElementById('loginBtn').onclick=async()=>{if(document.getElementById('pw').value!==window.MESECA_ADMIN_PASSWORD){alert('パスワードが違います。');return;}if(!setup())return;document.getElementById('login').classList.add('hidden');document.getElementById('admin').classList.remove('hidden');await load();};
-document.getElementById('reloadBtn').onclick=load;document.getElementById('printBtn').onclick=()=>window.print();
-</script></body></html>
+
+const CONFIG=window.MESECA_FIREBASE_CONFIG||{};
+const PASSWORD=window.MESECA_ADMIN_PASSWORD||'';
+let app, db;
+const baseImg=new Image();
+baseImg.src='assets/meseca-template.jpeg';
+
+function isFirebaseReady(){return !!(CONFIG.apiKey&&CONFIG.projectId);}
+function initFirebase(){ if(!isFirebaseReady()) throw new Error('Firebase設定がありません'); app=initializeApp(CONFIG); db=getFirestore(app); }
+
+function drawCard(canvas, data){
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,986,576);
+  ctx.drawImage(baseImg,0,0,986,576);
+  const style=data.style||{};
+  const weight=style.boldText?'700':'500';
+  function drawStyledLine(text,x,y){
+    if(style.shadowText){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=3;ctx.shadowOffsetX=2;ctx.shadowOffsetY=2;}
+    else{ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;}
+    ctx.fillText(text||'',x,y);
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  }
+  function wrapSingleLine(text,maxWidth,maxLines,lines){
+    const chars=[...(text||'')]; let line='';
+    for(const ch of chars){
+      const test=line+ch;
+      if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)return;}
+      else line=test;
+    }
+    lines.push(line);
+  }
+  function drawMessage(text,x,y,maxWidth,lineHeight,maxLines){
+    const rawLines=(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    const lines=[];
+    for(const raw of rawLines){
+      if(lines.length>=maxLines)break;
+      if(raw===''){lines.push('');continue;}
+      wrapSingleLine(raw,maxWidth,maxLines,lines);
+    }
+    lines.slice(0,maxLines).forEach((l,i)=>drawStyledLine(l,x,y+i*lineHeight));
+  }
+  ctx.textBaseline='top';
+  const fontSize=style.fontSize||32;
+  ctx.fillStyle=style.msgColor||'#e46aa5';
+  ctx.font=`${weight} ${fontSize}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;
+  drawMessage(data.message||'',style.msgX||245,style.msgY||167,555,fontSize+14,7);
+  ctx.fillStyle=style.nameColor||'#4aa3c7';
+  ctx.font=`${weight} ${style.nameSize||28}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;
+  drawStyledLine(data.from||'',style.nameX||444,style.nameY||467);
+  if(data.handDataUrl){
+    const hand=new Image();
+    hand.onload=()=>ctx.drawImage(hand,0,0);
+    hand.src=data.handDataUrl;
+  }
+}
+
+function downloadCanvas(canvas, name){
+  const a=document.createElement('a');
+  const safe=(name||'meseca').replace(/[\\/:*?"<>|]/g,'_');
+  a.download=`${safe}_meseca.png`;
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+
+async function loadCards(){
+  const status=document.getElementById('status');
+  const list=document.getElementById('list');
+  status.textContent='読み込み中…';
+  list.innerHTML='';
+  try{
+    const snap=await getDocs(query(collection(db,'meseca_cards'), orderBy('createdAt','desc')));
+    status.textContent=`${snap.size}件`;
+    snap.forEach(doc=>{
+      const data=doc.data();
+      const wrap=document.createElement('div');
+      wrap.className='card';
+      const canvas=document.createElement('canvas');
+      canvas.width=986; canvas.height=576;
+      const meta=document.createElement('div');
+      meta.className='meta';
+      meta.textContent=`From：${data.from||''}`;
+      const btn=document.createElement('button');
+      btn.textContent='PNGダウンロード';
+      btn.onclick=()=>downloadCanvas(canvas,data.from||doc.id);
+      wrap.appendChild(canvas); wrap.appendChild(meta); wrap.appendChild(btn);
+      list.appendChild(wrap);
+      if(baseImg.complete) drawCard(canvas,data);
+      else baseImg.onload=()=>drawCard(canvas,data);
+    });
+  }catch(err){console.error(err); status.textContent='読み込み失敗'; alert('管理画面の読み込みに失敗しました。Firestoreルールや設定を確認してください。');}
+}
+
+document.getElementById('loginBtn').onclick=()=>{
+  if(document.getElementById('pass').value!==PASSWORD){alert('パスワードが違います。');return;}
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('adminArea').classList.remove('hidden');
+  try{initFirebase();loadCards();}catch(e){alert(e.message);}
+};
+document.getElementById('loadBtn').onclick=loadCards;
+document.getElementById('printBtn').onclick=()=>window.print();
+</script>
+</body>
+</html>
