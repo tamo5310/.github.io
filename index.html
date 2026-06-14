@@ -1,247 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Riiko 配分計算ツール</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ずんちゃんメセカ作成フォーム</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fb;
-      color: #222;
-    }
-
-    .wrap {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-      margin-top: 16px;
-    }
-
-    h1 {
-      font-size: 24px;
-      margin: 0 0 8px;
-      text-align: center;
-    }
-
-    .sub {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 8px;
-      line-height: 1.6;
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 18px;
-      border: 1px solid #d8deea;
-      border-radius: 12px;
-      outline: none;
-      background: #fff;
-    }
-
-    input:focus {
-      border-color: #7b8cff;
-      box-shadow: 0 0 0 3px rgba(123, 140, 255, 0.15);
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 12px;
-    }
-
-    .primary {
-      background: #222;
-      color: #fff;
-    }
-
-    .secondary {
-      background: #eef2ff;
-      color: #334;
-    }
-
-    .result-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #edf0f5;
-      gap: 12px;
-    }
-
-    .row:last-child {
-      border-bottom: none;
-    }
-
-    .name {
-      font-size: 15px;
-      color: #444;
-    }
-
-    .value {
-      font-size: 17px;
-      font-weight: 700;
-      text-align: right;
-      word-break: break-all;
-    }
-
-    .note {
-      font-size: 12px;
-      color: #777;
-      margin-top: 10px;
-      line-height: 1.6;
-    }
-
-    .message {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #2d5a27;
-      line-height: 1.5;
-    }
-
-    .error {
-      color: #b00020;
-    }
+    :root{--pink:#f7a7cd;--deep:#e46aa5;--ink:#555;--bg:#fff5fb;--line:#ffd1e8}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    header{padding:20px 14px;text-align:center;background:#ffe2f1;border-bottom:3px solid var(--line)}
+    h1{font-size:22px;margin:0 0 6px;color:var(--deep)}.lead{margin:0;font-size:14px}
+    main{max-width:980px;margin:auto;padding:16px}.panel{background:white;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}
+    label{font-weight:700;display:block;margin:10px 0 6px}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}textarea{min-height:92px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:999px;padding:11px 16px;background:var(--pink);color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}button.secondary{background:#aaa;box-shadow:0 3px 0 #888}button.danger{background:#f08a8a;box-shadow:0 3px 0 #cf6666}button:disabled{opacity:.55;cursor:not-allowed}
+    .canvasWrap{position:relative;width:100%;overflow:auto;text-align:center}canvas{max-width:100%;height:auto;border-radius:12px;background:white;touch-action:none;box-shadow:0 2px 12px #0001}.small{font-size:12px;color:#777}.hidden{display:none!important}
+    .rangeLine{display:flex;align-items:center;gap:10px}.rangeLine input[type="range"]{padding:0}.rangeValue{min-width:48px;text-align:right;font-size:12px;color:#777}
+    .checks{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}.checks label{display:flex;align-items:center;gap:6px;margin:0;font-weight:700}.checks input{width:auto}
+    .counter{text-align:right;font-size:12px;color:#777;margin-top:4px}.hint{background:#fff8fc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}.thanks{text-align:center;padding:34px 16px}.thanks h2{color:var(--deep);font-size:24px}.status{margin-top:10px;font-weight:700;color:var(--deep)}
+    @media(max-width:700px){.row{grid-template-columns:1fr}h1{font-size:19px}}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Riiko 配分計算ツール</h1>
-      <div class="sub">
-        1位のポイントを入力すると、条件に合わせて自動計算します
+<header>
+  <h1>ずんちゃんメセカ作成フォーム</h1>
+  <p class="lead">メッセージを書いて、送信してください。</p>
+</header>
+<main>
+  <div id="formArea">
+    <section class="panel">
+      <label>From（お名前）</label>
+      <input id="from" maxlength="24" placeholder="例：いちごひめ" />
+      <label>メッセージ</label>
+      <textarea id="message" maxlength="240" placeholder="例：ずんちゃん、お誕生日おめでとう！&#10;素敵な一年になりますように。"></textarea>
+      <div id="msgCounter" class="counter">0 / 240文字</div>
+      <div class="row">
+        <div><label>本文サイズ</label><select id="fontSize"><option value="26">小さめ</option><option value="32" selected>ふつう</option><option value="38">大きめ</option><option value="44">特大</option></select></div>
+        <div><label>本文の色</label><select id="msgColor"></select></div>
       </div>
-
-      <label for="first">1位のポイント</label>
-      <input type="number" id="first" inputmode="numeric" value="10000" />
-
-      <button class="primary" onclick="calc()">計算する</button>
-      <button class="secondary" onclick="copyResult()">結果をコピー</button>
-
-      <div class="note">
-        条件：1位=29%、1位+2位=44%、1位〜5位=59%<br>
-        3位〜5位は均等、6位〜30位は合計表示です。
+      <div class="row">
+        <div><label>名前サイズ</label><select id="nameSize"><option value="24">小さめ</option><option value="28" selected>ふつう</option><option value="32">大きめ</option><option value="36">特大</option></select></div>
+        <div><label>名前の色</label><select id="nameColor"></select></div>
       </div>
-
-      <div id="copyMessage" class="message"></div>
-    </div>
-
-    <div class="card">
-      <div class="result-title">計算結果</div>
-      <div id="resultArea"></div>
-    </div>
+      <div class="row">
+        <div><label>本文の左右位置</label><div class="rangeLine"><input id="msgX" type="range" min="120" max="430" value="245"><span id="msgXv" class="rangeValue"></span></div></div>
+        <div><label>本文の上下位置</label><div class="rangeLine"><input id="msgY" type="range" min="90" max="260" value="167"><span id="msgYv" class="rangeValue"></span></div></div>
+      </div>
+      <div class="row">
+        <div><label>名前の左右位置</label><div class="rangeLine"><input id="nameX" type="range" min="380" max="560" value="444"><span id="nameXv" class="rangeValue"></span></div></div>
+        <div><label>名前の上下位置</label><div class="rangeLine"><input id="nameY" type="range" min="455" max="520" value="467"><span id="nameYv" class="rangeValue"></span></div></div>
+      </div>
+      <div class="checks">
+        <label><input id="boldText" type="checkbox" checked> 太字</label>
+        <label><input id="shadowText" type="checkbox"> 影つき</label>
+      </div>
+      <div class="buttons">
+        <button id="sendBtn">送信する</button>
+        <button id="clearHandBtn" class="danger">手書きを消す</button>
+        <button id="resetBtn" class="secondary">位置を戻す</button>
+      </div>
+      <div id="status" class="status"></div>
+      <div class="hint small">入力内容はすぐカードに反映されます。メッセージ欄で改行した場合、そのままカード上でも改行されます。スマホでは画像の上を指でなぞると手書きできます。</div>
+    </section>
+    <section class="panel"><div class="canvasWrap"><canvas id="card" width="986" height="576"></canvas></div></section>
   </div>
-
-  <script>
-    function formatPoint(value) {
-      return Math.round(value).toLocaleString("ja-JP") + "pt";
-    }
-
-    function buildResultText(first, total, second, third, lowerTotal) {
-      return [
-        "全体: " + formatPoint(total),
-        "1位: " + formatPoint(first),
-        "2位: " + formatPoint(second),
-        "3位: " + formatPoint(third),
-        "4位: " + formatPoint(third),
-        "5位: " + formatPoint(third),
-        "6位〜30位合計: " + formatPoint(lowerTotal)
-      ].join("\n");
-    }
-
-    function calc() {
-      const first = Number(document.getElementById("first").value);
-      const resultArea = document.getElementById("resultArea");
-      const copyMessage = document.getElementById("copyMessage");
-
-      copyMessage.textContent = "";
-
-      if (!first || first <= 0) {
-        resultArea.innerHTML = `
-          <div class="row">
-            <div class="name error">エラー</div>
-            <div class="value error">1位のポイントを入力してください</div>
-          </div>
-        `;
-        return;
-      }
-
-      const total = first / 0.29;
-      const second = (total * 0.44) - first;
-      const total5 = total * 0.59;
-      const third = (total5 - (first + second)) / 3;
-      const lowerTotal = total - total5;
-
-      resultArea.innerHTML = `
-        <div class="row"><div class="name">全体</div><div class="value">${formatPoint(total)}</div></div>
-        <div class="row"><div class="name">1位</div><div class="value">${formatPoint(first)}</div></div>
-        <div class="row"><div class="name">2位</div><div class="value">${formatPoint(second)}</div></div>
-        <div class="row"><div class="name">3位</div><div class="value">${formatPoint(third)}</div></div>
-        <div class="row"><div class="name">4位</div><div class="value">${formatPoint(third)}</div></div>
-        <div class="row"><div class="name">5位</div><div class="value">${formatPoint(third)}</div></div>
-        <div class="row"><div class="name">6位〜30位合計</div><div class="value">${formatPoint(lowerTotal)}</div></div>
-      `;
-    }
-
-    async function copyResult() {
-      const first = Number(document.getElementById("first").value);
-      const copyMessage = document.getElementById("copyMessage");
-
-      if (!first || first <= 0) {
-        copyMessage.textContent = "1位のポイントを入力してからコピーしてください。";
-        return;
-      }
-
-      const total = first / 0.29;
-      const second = (total * 0.44) - first;
-      const total5 = total * 0.59;
-      const third = (total5 - (first + second)) / 3;
-      const lowerTotal = total - total5;
-
-      const text = buildResultText(first, total, second, third, lowerTotal);
-
-      try {
-        await navigator.clipboard.writeText(text);
-        copyMessage.textContent = "結果をコピーしました。";
-      } catch (e) {
-        copyMessage.textContent = "コピーできませんでした。";
-      }
-    }
-
-    calc();
-  </script>
+  <section id="thanksArea" class="panel thanks hidden">
+    <h2>🎂 メッセージを受け付けました 🎂</h2>
+    <p>ご入力いただいたメッセージは<br>お誕生日アルバムとして本人へお届けします。</p>
+    <p>ご参加ありがとうございました🍓</p>
+    <p class="small">この画面は閉じていただいて大丈夫です。</p>
+  </section>
+</main>
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
+const canvas=document.getElementById('card'); const ctx=canvas.getContext('2d');
+const base=new Image(); base.src='assets/meseca-template.jpeg';
+const hand=document.createElement('canvas'); hand.width=986; hand.height=576; const hctx=hand.getContext('2d');
+let drawing=false,last=null;
+const defaults={msgX:245,msgY:167,nameX:444,nameY:467};
+const colors=[['#e46aa5','ピンク'],['#e84b5f','赤'],['#f28b38','オレンジ'],['#f0c84b','黄色'],['#55b86f','緑'],['#4aa3c7','水色'],['#4f73d9','青'],['#8a63c7','紫']];
+function fillColorSelect(id, selected){const sel=document.getElementById(id);sel.innerHTML=colors.map(([v,n])=>`<option value="${v}" ${v===selected?'selected':''}>${n}</option>`).join('');}
+fillColorSelect('msgColor','#e46aa5'); fillColorSelect('nameColor','#4aa3c7');
+function updateRangeLabels(){['msgX','msgY','nameX','nameY'].forEach(id=>{document.getElementById(id+'v').textContent=document.getElementById(id).value+' px';});}
+function updateCounter(){const len=document.getElementById('message').value.length;document.getElementById('msgCounter').textContent=`${len} / 240文字`;}
+function wrapSingleLine(text,x,y,maxWidth,lineHeight,maxLines,lines){const chars=[...text]; let line='';for(const ch of chars){const test=line+ch;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)return;}else line=test;}lines.push(line);}
+function drawStyledLine(text,x,y){const shadow=document.getElementById('shadowText').checked;if(shadow){ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=3;ctx.shadowOffsetX=2;ctx.shadowOffsetY=2;}else{ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;}ctx.fillText(text,x,y);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;}
+function drawMessage(text,x,y,maxWidth,lineHeight,maxLines){const rawLines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');const lines=[];for(const raw of rawLines){if(lines.length>=maxLines)break;if(raw===''){lines.push('');continue;}wrapSingleLine(raw,x,y,maxWidth,lineHeight,maxLines,lines);}lines.slice(0,maxLines).forEach((l,i)=>drawStyledLine(l,x,y+i*lineHeight));}
+function render(){updateRangeLabels();updateCounter();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(base,0,0,986,576);const name=document.getElementById('from').value.trim();const msg=document.getElementById('message').value;const size=+document.getElementById('fontSize').value;const nameSize=+document.getElementById('nameSize').value;const msgColor=document.getElementById('msgColor').value;const nameColor=document.getElementById('nameColor').value;const mx=+document.getElementById('msgX').value; const my=+document.getElementById('msgY').value;const nx=+document.getElementById('nameX').value; const ny=+document.getElementById('nameY').value;const weight=document.getElementById('boldText').checked?'700':'500';ctx.textBaseline='top';ctx.fillStyle=msgColor;ctx.font=`${weight} ${size}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;drawMessage(msg,mx,my,555,size+14,7);ctx.fillStyle=nameColor;ctx.font=`${weight} ${nameSize}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;drawStyledLine(name,nx,ny);ctx.drawImage(hand,0,0);}
+base.onload=render;
+['from','message','fontSize','nameSize','msgColor','nameColor','msgX','msgY','nameX','nameY','boldText','shadowText'].forEach(id=>document.getElementById(id).addEventListener('input',render));
+document.getElementById('resetBtn').onclick=()=>{Object.entries(defaults).forEach(([id,val])=>document.getElementById(id).value=val);render();};
+function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
+canvas.addEventListener('pointerdown',e=>{drawing=true;last=pos(e);canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=pos(e);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=5;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render()});
+canvas.addEventListener('pointerup',()=>drawing=false);canvas.addEventListener('pointercancel',()=>drawing=false);
+document.getElementById('clearHandBtn').onclick=()=>{hctx.clearRect(0,0,hand.width,hand.height);render()};
+function isFirebaseReady(){const c=window.MESECA_FIREBASE_CONFIG||{};return !!(c.apiKey&&c.projectId&&c.storageBucket);}
+let app,db,storage;if(isFirebaseReady()){app=initializeApp(window.MESECA_FIREBASE_CONFIG);db=getFirestore(app);storage=getStorage(app);}
+function canvasToBlob(){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('画像作成に失敗しました')),'image/png'));}
+document.getElementById('sendBtn').onclick=async()=>{
+  const from=document.getElementById('from').value.trim(); const message=document.getElementById('message').value.trim();
+  if(!from){alert('お名前を入力してください。');return;} if(!message){alert('メッセージを入力してください。');return;}
+  if(!isFirebaseReady()){alert('Firebase設定がまだ入っていません。firebase-config.js に設定を貼ってから送信できます。');return;}
+  if(!confirm('この内容で送信しますか？'))return;
+  const btn=document.getElementById('sendBtn'); const status=document.getElementById('status'); btn.disabled=true; status.textContent='送信中です…';
+  try{
+    render(); const blob=await canvasToBlob(); const id=`${Date.now()}_${Math.random().toString(36).slice(2,8)}`; const path=`meseca/${id}.png`;
+    const storageRef=ref(storage,path); await uploadBytes(storageRef,blob,{contentType:'image/png'}); const imageUrl=await getDownloadURL(storageRef);
+    await addDoc(collection(db,'meseca_cards'),{from,message,imageUrl,storagePath:path,createdAt:serverTimestamp(),checked:false});
+    document.getElementById('formArea').classList.add('hidden'); document.getElementById('thanksArea').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'});
+  }catch(err){console.error(err); alert('送信に失敗しました。少し時間をおいてもう一度お試しください。'); btn.disabled=false; status.textContent='';}
+};
+</script>
 </body>
 </html>
