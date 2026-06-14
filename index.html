@@ -73,7 +73,7 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
+
 const canvas=document.getElementById('card'); const ctx=canvas.getContext('2d');
 const base=new Image(); base.src='assets/meseca-template.jpeg';
 const hand=document.createElement('canvas'); hand.width=986; hand.height=576; const hctx=hand.getContext('2d');
@@ -96,9 +96,8 @@ canvas.addEventListener('pointerdown',e=>{drawing=true;last=pos(e);canvas.setPoi
 canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=pos(e);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=5;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render()});
 canvas.addEventListener('pointerup',()=>drawing=false);canvas.addEventListener('pointercancel',()=>drawing=false);
 document.getElementById('clearHandBtn').onclick=()=>{hctx.clearRect(0,0,hand.width,hand.height);render()};
-function isFirebaseReady(){const c=window.MESECA_FIREBASE_CONFIG||{};return !!(c.apiKey&&c.projectId&&c.storageBucket);}
-let app,db,storage;if(isFirebaseReady()){app=initializeApp(window.MESECA_FIREBASE_CONFIG);db=getFirestore(app);storage=getStorage(app);}
-function canvasToBlob(){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('画像作成に失敗しました')),'image/png'));}
+function isFirebaseReady(){const c=window.MESECA_FIREBASE_CONFIG||{};return !!(c.apiKey&&c.projectId);}
+let app,db;if(isFirebaseReady()){app=initializeApp(window.MESECA_FIREBASE_CONFIG);db=getFirestore(app);}
 document.getElementById('sendBtn').onclick=async()=>{
   const from=document.getElementById('from').value.trim(); const message=document.getElementById('message').value.trim();
   if(!from){alert('お名前を入力してください。');return;} if(!message){alert('メッセージを入力してください。');return;}
@@ -106,9 +105,27 @@ document.getElementById('sendBtn').onclick=async()=>{
   if(!confirm('この内容で送信しますか？'))return;
   const btn=document.getElementById('sendBtn'); const status=document.getElementById('status'); btn.disabled=true; status.textContent='送信中です…';
   try{
-    render(); const blob=await canvasToBlob(); const id=`${Date.now()}_${Math.random().toString(36).slice(2,8)}`; const path=`meseca/${id}.png`;
-    const storageRef=ref(storage,path); await uploadBytes(storageRef,blob,{contentType:'image/png'}); const imageUrl=await getDownloadURL(storageRef);
-    await addDoc(collection(db,'meseca_cards'),{from,message,imageUrl,storagePath:path,createdAt:serverTimestamp(),checked:false});
+    render();
+    const handDataUrl = hand.toDataURL('image/png');
+    await addDoc(collection(db,'meseca_cards'),{
+      from,
+      message,
+      handDataUrl,
+      style:{
+        fontSize:+document.getElementById('fontSize').value,
+        nameSize:+document.getElementById('nameSize').value,
+        msgColor:document.getElementById('msgColor').value,
+        nameColor:document.getElementById('nameColor').value,
+        msgX:+document.getElementById('msgX').value,
+        msgY:+document.getElementById('msgY').value,
+        nameX:+document.getElementById('nameX').value,
+        nameY:+document.getElementById('nameY').value,
+        boldText:document.getElementById('boldText').checked,
+        shadowText:document.getElementById('shadowText').checked
+      },
+      createdAt:serverTimestamp(),
+      checked:false
+    });
     document.getElementById('formArea').classList.add('hidden'); document.getElementById('thanksArea').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'});
   }catch(err){console.error(err); alert('送信に失敗しました。少し時間をおいてもう一度お試しください。'); btn.disabled=false; status.textContent='';}
 };
