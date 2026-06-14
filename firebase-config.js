@@ -8,4 +8,4 @@ window.MESECA_FIREBASE_CONFIG = {
 };
 
 // 管理画面用の簡易パスワードです。公開前に必ず変更してください。
-window.MESECA_ADMIN_PASSWORD = "1234";
+window.MESECA_ADMIN_PASSWORD = "zunchan49";
