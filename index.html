@@ -102,7 +102,7 @@ document.getElementById('sendBtn').onclick=async()=>{
   const from=document.getElementById('from').value.trim(); const message=document.getElementById('message').value.trim();
   if(!from){alert('お名前を入力してください。');return;} if(!message){alert('メッセージを入力してください。');return;}
   if(!isFirebaseReady()){alert('Firebase設定がまだ入っていません。firebase-config.js に設定を貼ってから送信できます。');return;}
-  if(!confirm('この内容で送信しますか？'))return;
+  //if(!confirm('この内容で送信しますか？'))return;
   const btn=document.getElementById('sendBtn'); const status=document.getElementById('status'); btn.disabled=true; status.textContent='送信中です…';
   try{
     render();
