@@ -12,7 +12,7 @@
     main{max-width:980px;margin:auto;padding:16px}.panel{background:white;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}
     label{font-weight:700;display:block;margin:10px 0 6px}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}textarea{min-height:92px;resize:vertical}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:999px;padding:11px 16px;background:var(--pink);color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}button.secondary{background:#aaa;box-shadow:0 3px 0 #888}button.danger{background:#f08a8a;box-shadow:0 3px 0 #cf6666}button:disabled{opacity:.55;cursor:not-allowed}
-    .canvasWrap{position:relative;width:100%;overflow:auto;text-align:center}canvas{max-width:100%;height:auto;border-radius:12px;background:white;touch-action:none;box-shadow:0 2px 12px #0001}.small{font-size:12px;color:#777}.hidden{display:none!important}
+    .canvasWrap{position:relative;width:100%;overflow:auto;text-align:center;touch-action:none;overscroll-behavior:contain}canvas{max-width:100%;height:auto;border-radius:12px;background:white;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:0 2px 12px #0001}.small{font-size:12px;color:#777}.hidden{display:none!important}
     .rangeLine{display:flex;align-items:center;gap:10px}.rangeLine input[type="range"]{padding:0}.rangeValue{min-width:48px;text-align:right;font-size:12px;color:#777}
     .checks{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}.checks label{display:flex;align-items:center;gap:6px;margin:0;font-weight:700}.checks input{width:auto}
     .counter{text-align:right;font-size:12px;color:#777;margin-top:4px}.hint{background:#fff8fc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}.thanks{text-align:center;padding:34px 16px}.thanks h2{color:var(--deep);font-size:24px}.status{margin-top:10px;font-weight:700;color:var(--deep)}
@@ -54,6 +54,7 @@
       </div>
       <div class="buttons">
         <button id="sendBtn">送信する</button>
+        <button id="undoHandBtn" class="secondary" disabled>↩ 元に戻す</button>
         <button id="clearHandBtn" class="danger">手書きを消す</button>
         <button id="resetBtn" class="secondary">位置を戻す</button>
       </div>
@@ -78,6 +79,9 @@ const canvas=document.getElementById('card'); const ctx=canvas.getContext('2d');
 const base=new Image(); base.src='assets/meseca-template.jpeg';
 const hand=document.createElement('canvas'); hand.width=986; hand.height=576; const hctx=hand.getContext('2d');
 let drawing=false,last=null;
+let handHistory=[];
+function updateUndoButton(){const btn=document.getElementById('undoHandBtn'); if(btn) btn.disabled = handHistory.length === 0;}
+function saveHandHistory(){handHistory.push(hctx.getImageData(0,0,hand.width,hand.height)); if(handHistory.length>30) handHistory.shift(); updateUndoButton();}
 const defaults={msgX:245,msgY:167,nameX:444,nameY:467};
 const colors=[['#e46aa5','ピンク'],['#e84b5f','赤'],['#f28b38','オレンジ'],['#f0c84b','黄色'],['#55b86f','緑'],['#4aa3c7','水色'],['#4f73d9','青'],['#8a63c7','紫']];
 function fillColorSelect(id, selected){const sel=document.getElementById(id);sel.innerHTML=colors.map(([v,n])=>`<option value="${v}" ${v===selected?'selected':''}>${n}</option>`).join('');}
@@ -92,17 +96,45 @@ base.onload=render;
 ['from','message','fontSize','nameSize','msgColor','nameColor','msgX','msgY','nameX','nameY','boldText','shadowText'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 document.getElementById('resetBtn').onclick=()=>{Object.entries(defaults).forEach(([id,val])=>document.getElementById(id).value=val);render();};
 function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
-canvas.addEventListener('pointerdown',e=>{drawing=true;last=pos(e);canvas.setPointerCapture(e.pointerId)});
-canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=pos(e);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=5;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render()});
-canvas.addEventListener('pointerup',()=>drawing=false);canvas.addEventListener('pointercancel',()=>drawing=false);
-document.getElementById('clearHandBtn').onclick=()=>{hctx.clearRect(0,0,hand.width,hand.height);render()};
+canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  saveHandHistory();
+  drawing=true;
+  last=pos(e);
+  canvas.setPointerCapture(e.pointerId);
+},{passive:false});
+canvas.addEventListener('pointermove',e=>{
+  if(!drawing)return;
+  e.preventDefault();
+  const p=pos(e);
+  hctx.strokeStyle=document.getElementById('msgColor').value;
+  hctx.lineWidth=5;
+  hctx.lineCap='round';
+  hctx.lineJoin='round';
+  hctx.beginPath();
+  hctx.moveTo(last.x,last.y);
+  hctx.lineTo(p.x,p.y);
+  hctx.stroke();
+  last=p;
+  render();
+},{passive:false});
+canvas.addEventListener('pointerup',e=>{e.preventDefault();drawing=false;},{passive:false});
+canvas.addEventListener('pointercancel',e=>{e.preventDefault();drawing=false;},{passive:false});
+document.getElementById('undoHandBtn').onclick=()=>{
+  const prev=handHistory.pop();
+  if(!prev)return;
+  hctx.putImageData(prev,0,0);
+  updateUndoButton();
+  render();
+};
+document.getElementById('clearHandBtn').onclick=()=>{saveHandHistory();hctx.clearRect(0,0,hand.width,hand.height);render()};
+updateUndoButton();
 function isFirebaseReady(){const c=window.MESECA_FIREBASE_CONFIG||{};return !!(c.apiKey&&c.projectId);}
 let app,db;if(isFirebaseReady()){app=initializeApp(window.MESECA_FIREBASE_CONFIG);db=getFirestore(app);}
 document.getElementById('sendBtn').onclick=async()=>{
   const from=document.getElementById('from').value.trim(); const message=document.getElementById('message').value.trim();
   if(!from){alert('お名前を入力してください。');return;} if(!message){alert('メッセージを入力してください。');return;}
   if(!isFirebaseReady()){alert('Firebase設定がまだ入っていません。firebase-config.js に設定を貼ってから送信できます。');return;}
-  //if(!confirm('この内容で送信しますか？'))return;
   const btn=document.getElementById('sendBtn'); const status=document.getElementById('status'); btn.disabled=true; status.textContent='送信中です…';
   try{
     render();
