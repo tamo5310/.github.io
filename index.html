@@ -35,6 +35,7 @@
       <div class="row">
         <div><label>本文サイズ</label><select id="fontSize"><option value="26">小さめ</option><option value="32" selected>ふつう</option><option value="38">大きめ</option><option value="44">特大</option></select></div>
         <div><label>本文の色</label><select id="msgColor"></select></div>
+        <div><label>手書きの太さ</label><select id="penSize"><option value="3">細い</option><option value="5" selected>ふつう</option><option value="8">太い</option></select></div>
       </div>
       <div class="row">
         <div><label>名前サイズ</label><select id="nameSize"><option value="24">小さめ</option><option value="28" selected>ふつう</option><option value="32">大きめ</option><option value="36">特大</option></select></div>
@@ -59,7 +60,7 @@
         <button id="resetBtn" class="secondary">位置を戻す</button>
       </div>
       <div id="status" class="status"></div>
-      <div class="hint small">入力内容はすぐカードに反映されます。メッセージ欄で改行した場合、そのままカード上でも改行されます。スマホでは画像の上を指でなぞると手書きできます。</div>
+      <div class="hint small">入力内容はすぐカードに反映されます。メッセージ欄で改行した場合、そのままカード上でも改行されます。スマホでは画像の上を指でなぞると手書きできます。手書きの色は本文の色と連動します。手書きの色を変えたい場合は「本文の色」を変更してください。</div>
     </section>
     <section class="panel"><div class="canvasWrap"><canvas id="card" width="986" height="576"></canvas></div></section>
   </div>
@@ -93,11 +94,11 @@ function drawStyledLine(text,x,y){const shadow=document.getElementById('shadowTe
 function drawMessage(text,x,y,maxWidth,lineHeight,maxLines){const rawLines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');const lines=[];for(const raw of rawLines){if(lines.length>=maxLines)break;if(raw===''){lines.push('');continue;}wrapSingleLine(raw,x,y,maxWidth,lineHeight,maxLines,lines);}lines.slice(0,maxLines).forEach((l,i)=>drawStyledLine(l,x,y+i*lineHeight));}
 function render(){updateRangeLabels();updateCounter();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(base,0,0,986,576);const name=document.getElementById('from').value.trim();const msg=document.getElementById('message').value;const size=+document.getElementById('fontSize').value;const nameSize=+document.getElementById('nameSize').value;const msgColor=document.getElementById('msgColor').value;const nameColor=document.getElementById('nameColor').value;const mx=+document.getElementById('msgX').value; const my=+document.getElementById('msgY').value;const nx=+document.getElementById('nameX').value; const ny=+document.getElementById('nameY').value;const weight=document.getElementById('boldText').checked?'700':'500';ctx.textBaseline='top';ctx.fillStyle=msgColor;ctx.font=`${weight} ${size}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;drawMessage(msg,mx,my,555,size+14,7);ctx.fillStyle=nameColor;ctx.font=`${weight} ${nameSize}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;drawStyledLine(name,nx,ny);ctx.drawImage(hand,0,0);}
 base.onload=render;
-['from','message','fontSize','nameSize','msgColor','nameColor','msgX','msgY','nameX','nameY','boldText','shadowText'].forEach(id=>document.getElementById(id).addEventListener('input',render));
+['from','message','fontSize','nameSize','msgColor','nameColor','msgX','msgY','nameX','nameY','boldText','shadowText','penSize'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 document.getElementById('resetBtn').onclick=()=>{Object.entries(defaults).forEach(([id,val])=>document.getElementById(id).value=val);render();};
 function pointFromClient(clientX,clientY){const r=canvas.getBoundingClientRect();return{x:(clientX-r.left)*canvas.width/r.width,y:(clientY-r.top)*canvas.height/r.height}}
 function startHand(clientX,clientY){saveHandHistory();drawing=true;last=pointFromClient(clientX,clientY);document.body.classList.add('drawingNow');}
-function moveHand(clientX,clientY){if(!drawing)return;const p=pointFromClient(clientX,clientY);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=5;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render();}
+function moveHand(clientX,clientY){if(!drawing)return;const p=pointFromClient(clientX,clientY);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=+document.getElementById('penSize').value;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render();}
 function endHand(){drawing=false;document.body.classList.remove('drawingNow');}
 
 // スマホは touch イベントで処理します。preventDefault を確実に効かせて、手書き中の画面スクロールを防ぎます。
