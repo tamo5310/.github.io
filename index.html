@@ -6,13 +6,13 @@
   <title>ずんちゃんメセカ作成フォーム</title>
   <style>
     :root{--pink:#f7a7cd;--deep:#e46aa5;--ink:#555;--bg:#fff5fb;--line:#ffd1e8}
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    html,body{overscroll-behavior-y:contain}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}body.drawingNow{overflow:hidden;touch-action:none}
     header{padding:20px 14px;text-align:center;background:#ffe2f1;border-bottom:3px solid var(--line)}
     h1{font-size:22px;margin:0 0 6px;color:var(--deep)}.lead{margin:0;font-size:14px}
     main{max-width:980px;margin:auto;padding:16px}.panel{background:white;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 4px 16px #e9b8d840}
     label{font-weight:700;display:block;margin:10px 0 6px}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff}textarea{min-height:92px;resize:vertical}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:999px;padding:11px 16px;background:var(--pink);color:white;font-weight:700;box-shadow:0 3px 0 #dc78ad;cursor:pointer}button.secondary{background:#aaa;box-shadow:0 3px 0 #888}button.danger{background:#f08a8a;box-shadow:0 3px 0 #cf6666}button:disabled{opacity:.55;cursor:not-allowed}
-    .canvasWrap{position:relative;width:100%;overflow:auto;text-align:center;touch-action:none;overscroll-behavior:contain}canvas{max-width:100%;height:auto;border-radius:12px;background:white;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:0 2px 12px #0001}.small{font-size:12px;color:#777}.hidden{display:none!important}
+    .canvasWrap{position:relative;width:100%;overflow:visible;text-align:center;touch-action:none;overscroll-behavior:contain}canvas{max-width:100%;height:auto;border-radius:12px;background:white;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:0 2px 12px #0001}.small{font-size:12px;color:#777}.hidden{display:none!important}
     .rangeLine{display:flex;align-items:center;gap:10px}.rangeLine input[type="range"]{padding:0}.rangeValue{min-width:48px;text-align:right;font-size:12px;color:#777}
     .checks{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}.checks label{display:flex;align-items:center;gap:6px;margin:0;font-weight:700}.checks input{width:auto}
     .counter{text-align:right;font-size:12px;color:#777;margin-top:4px}.hint{background:#fff8fc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}.thanks{text-align:center;padding:34px 16px}.thanks h2{color:var(--deep);font-size:24px}.status{margin-top:10px;font-weight:700;color:var(--deep)}
@@ -95,31 +95,22 @@ function render(){updateRangeLabels();updateCounter();ctx.clearRect(0,0,canvas.w
 base.onload=render;
 ['from','message','fontSize','nameSize','msgColor','nameColor','msgX','msgY','nameX','nameY','boldText','shadowText'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 document.getElementById('resetBtn').onclick=()=>{Object.entries(defaults).forEach(([id,val])=>document.getElementById(id).value=val);render();};
-function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
-canvas.addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  saveHandHistory();
-  drawing=true;
-  last=pos(e);
-  canvas.setPointerCapture(e.pointerId);
-},{passive:false});
-canvas.addEventListener('pointermove',e=>{
-  if(!drawing)return;
-  e.preventDefault();
-  const p=pos(e);
-  hctx.strokeStyle=document.getElementById('msgColor').value;
-  hctx.lineWidth=5;
-  hctx.lineCap='round';
-  hctx.lineJoin='round';
-  hctx.beginPath();
-  hctx.moveTo(last.x,last.y);
-  hctx.lineTo(p.x,p.y);
-  hctx.stroke();
-  last=p;
-  render();
-},{passive:false});
-canvas.addEventListener('pointerup',e=>{e.preventDefault();drawing=false;},{passive:false});
-canvas.addEventListener('pointercancel',e=>{e.preventDefault();drawing=false;},{passive:false});
+function pointFromClient(clientX,clientY){const r=canvas.getBoundingClientRect();return{x:(clientX-r.left)*canvas.width/r.width,y:(clientY-r.top)*canvas.height/r.height}}
+function startHand(clientX,clientY){saveHandHistory();drawing=true;last=pointFromClient(clientX,clientY);document.body.classList.add('drawingNow');}
+function moveHand(clientX,clientY){if(!drawing)return;const p=pointFromClient(clientX,clientY);hctx.strokeStyle=document.getElementById('msgColor').value;hctx.lineWidth=5;hctx.lineCap='round';hctx.lineJoin='round';hctx.beginPath();hctx.moveTo(last.x,last.y);hctx.lineTo(p.x,p.y);hctx.stroke();last=p;render();}
+function endHand(){drawing=false;document.body.classList.remove('drawingNow');}
+
+// スマホは touch イベントで処理します。preventDefault を確実に効かせて、手書き中の画面スクロールを防ぎます。
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];if(t)startHand(t.clientX,t.clientY);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];if(t)moveHand(t.clientX,t.clientY);},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();endHand();},{passive:false});
+canvas.addEventListener('touchcancel',e=>{e.preventDefault();endHand();},{passive:false});
+
+// PCやペン操作は pointer イベントで処理します。touch は上の touch イベントに任せて二重描画を防ぎます。
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;e.preventDefault();startHand(e.clientX,e.clientY);canvas.setPointerCapture(e.pointerId);},{passive:false});
+canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;if(!drawing)return;e.preventDefault();moveHand(e.clientX,e.clientY);},{passive:false});
+canvas.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;e.preventDefault();endHand();},{passive:false});
+canvas.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')return;e.preventDefault();endHand();},{passive:false});
 document.getElementById('undoHandBtn').onclick=()=>{
   const prev=handHistory.pop();
   if(!prev)return;
